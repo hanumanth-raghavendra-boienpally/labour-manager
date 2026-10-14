@@ -1,0 +1,6 @@
+# Build-only override: docker compose -f docker-compose.yml -f docker-compose.build.yml build
+services:
+  backend:
+    build: ./backend
+  frontend:
+    build: ./frontend

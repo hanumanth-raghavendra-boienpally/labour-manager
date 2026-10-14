@@ -2,6 +2,7 @@ node_modules/
 dist/
 target/
 .env
+backend.env
 .idea/
 .vscode/
 *.iml

@@ -88,7 +88,7 @@ mvn spring-boot:run
 
 You should see `DB1 OK (agent data, read-only)`, `DB2 OK (workflow data)` and `Started LabourManagerApplication`.
 If a database setting is wrong you get a short message saying what to change, not a stack trace.
-The API listens on **http://localhost:8080**.
+The API listens on **http://localhost:8080** by default (set `PORT=10000` in `backend/.env` to use 10000).
 
 ## 4. Start the frontend
 
@@ -98,7 +98,8 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173**. Vite forwards `/api` to port 8080.
+Open **http://localhost:10001**. Calls go to `VITE_API_BASE_URL` (`frontend/.env`, e.g. `http://localhost:10000`); if it is empty, Vite forwards `/api` to port 10000.
+With `VITE_API_BASE_URL` set, add `ALLOWED_ORIGINS=http://localhost:10001` to `backend/.env` (CORS).
 
 ## 5. Demo: the whole workflow
 
@@ -181,8 +182,26 @@ The wrong role gets **403**; a repeated or stale action (approving twice, an old
 | `AGENT_REQUEST_STATUSES` | `PUBLISHED` | `agent_playbook.status` values that count as a request, comma-separated |
 | `AGENT_POLL_MS` | `1500` | how often DB1 is checked for a new forecast |
 | `TOKEN_SECRET` | dev value | signs sign-in tokens |
-| `PORT` | `8080` | API port |
+| `PORT` | `8080` | API port for local runs. Leave unset in Docker (the container always uses 8080) |
+| `ALLOWED_ORIGINS` | `http://localhost:5173` | frontend origin(s) allowed to call the API directly (CORS), comma-separated |
 | `DEMO_USERS` | `true` | create the three demo sign-ins |
+
+## Docker deployment (VM without GitHub access)
+
+The browser only needs the frontend container (port 10001): nginx serves the site and forwards `/api` to the backend, so the frontend needs no backend URL
+(`VITE_API_BASE_URL` stays empty) and no CORS setting. The images are shipped as files, no registry needed.
+
+1. **Build machine (Docker Desktop):** `.\scripts\deploy-offline.ps1` builds both images and writes `dist\labour-backend.tar.gz` and `dist\labour-frontend.tar.gz` (old files in `dist\` are removed).
+   Add `-VmHost <ip> -VmUser <user> [-JumpHost <bastion>] -Deploy` to also copy and start them over SSH.
+   `-Platform` must match the VM (`uname -m`: `x86_64` = `linux/amd64`, `aarch64` = `linux/arm64`).
+2. **VM, first time:** create `/opt/labour-manager/backend.env` from `backend/.env.example` (DB1_URL, DB2_URL, TOKEN_SECRET ...). It is never baked into an image.
+3. **VM, by hand instead of `-Deploy`:**
+   ```bash
+   cd /opt/labour-manager          # holds docker-compose.yml, backend.env and the two .tar.gz files
+   docker load -i labour-backend.tar.gz && docker load -i labour-frontend.tar.gz
+   docker compose up -d            # recreates a container only if its image changed
+   ```
+4. Open `http://<vm>:10001/` (the site). The API is also published on `:10000`. Change them with `FRONTEND_PORT` / `BACKEND_PORT` in a `.env` file next to `docker-compose.yml`; open both ports in the VM firewall. The VM must be able to reach the databases in `DB1_URL` / `DB2_URL`.
 
 ## 9. Project layout
 
@@ -196,6 +215,7 @@ frontend/   React 19 + Vite, plain JavaScript (JSX)
   pages/       ForecastPage, AllocationPage, AdminPage
   components/  ForecastCard, ForecastStats (KPI cards + zone chips + chart), StaffingChart, AllocationCard (+ AllocationDetails), DecisionRecord, ...
   layout/      Shell: header, navigation, bell, popups
+docker-compose.yml, docker-compose.build.yml, scripts/deploy-offline.ps1   container deployment
 database/
   db1/                       your schema and seed for DB1
   agent-simulator.sql        stand-in for the agent (DB1)
@@ -210,4 +230,4 @@ database/
   the backend log prints `registered as forecast request` when it picks one up. A popup put off with **Later** stays away for that browser
   tab (it comes back in a new tab or window); the request is always in the bell.
 - **`function agent_sim.publish does not exist`:** run `database/agent-simulator.sql` on DB1 first.
-- **Sign-in page says it can't load demo identities:** the backend isn't running on port 8080.
+- **Sign-in page says it can't load demo identities:** the backend isn't running, or `VITE_API_BASE_URL` / the Vite proxy points at the wrong port.

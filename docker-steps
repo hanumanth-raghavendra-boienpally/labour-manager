@@ -1,0 +1,10 @@
+1.run the script/deploy-offline.ps1 where you need to have your local docker up and running.
+2.under the dist/* files created
+3.via winscp move the folders 
+4.create a backend.env file and update the changes in the file and make permissions to 600
+6.sudo docker compose down
+6.load images
+a.sudo docker load -i dist/labour-backend.tar.gz
+b.sudo docker load -i dist/labour-frontend.tar.gz
+7.sudo docker compose up -d
+8.sudo docker compose ps

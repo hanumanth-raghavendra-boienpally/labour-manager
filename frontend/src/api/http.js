@@ -27,7 +27,10 @@ export class ApiError extends Error {
   }
 }
 
-/** Calls the Spring Boot API (proxied by Vite on /api) and throws ApiError with the server's message. */
+// Backend origin from VITE_API_BASE_URL (frontend/.env). Empty means same origin, so the Vite /api proxy is used.
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+
+/** Calls the Spring Boot API at VITE_API_BASE_URL (or the Vite /api proxy if unset) and throws ApiError with the server's message. */
 export async function api(path, init = {}) {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
@@ -36,9 +39,9 @@ export async function api(path, init = {}) {
 
   let res;
   try {
-    res = await fetch(path, { ...init, headers });
+    res = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
   } catch {
-    throw new ApiError(0, "Can't reach the server. Check that the backend is running on port 8080.");
+    throw new ApiError(0, `Can't reach the server. Check that the backend is running${API_BASE_URL ? ` at ${API_BASE_URL}` : ''}.`);
   }
   if (res.status === 401 && !path.startsWith('/api/auth/login')) sessionLostHandler();
   if (!res.ok) {

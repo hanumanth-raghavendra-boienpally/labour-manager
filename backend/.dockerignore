@@ -1,0 +1,5 @@
+# Never bake secrets or build output into the image: the backend would pick up a .env file and ignore real environment variables.
+.env
+.env.*
+target/
+*.ps1

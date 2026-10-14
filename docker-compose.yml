@@ -1,0 +1,23 @@
+# Runs on the VM from images that were loaded with `docker load` (no registry, no build there).
+# Needs next to this file: backend.env (DB1_URL, DB2_URL, TOKEN_SECRET ... see backend/.env.example).
+# On the build machine, add docker-compose.build.yml to build the images (see scripts/deploy-offline.ps1).
+name: labour-manager
+
+services:
+  backend:
+    image: labour-backend:latest
+    pull_policy: never
+    env_file: ./backend.env
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-10000}:8080" # direct API access; the site itself reaches it over the compose network
+
+  frontend:
+    image: labour-frontend:latest
+    pull_policy: never
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-10001}:8080"

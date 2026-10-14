@@ -1,0 +1,6 @@
+# A local .env would be bundled into the build (VITE_API_BASE_URL=http://localhost:8080) and break the same-origin setup.
+.env
+.env.*
+node_modules/
+dist/
+.vite/
