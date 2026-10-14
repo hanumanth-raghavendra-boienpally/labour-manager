@@ -1,0 +1,27 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  # Reads backend/.env too (TOKEN_SECRET, PORT ...). Optional: no error if the file is missing.
+  config:
+    import: optional:file:./.env[.properties]
+  application:
+    name: labour-manager
+  # Database settings are NOT here. DB1_URL and DB2_URL come from backend/.env (see .env.example) via DbSettings.java.
+
+app:
+  # Shown on the sign-in page footer.
+  name: WINFO Labour Manager
+  # Signs the login tokens. Change it for anything beyond a local demo.
+  token-secret: ${TOKEN_SECRET:dev-only-labour-manager-token-secret-change-me-0123456789}
+  token-ttl-hours: 10
+  # Frontend origin allowed to call the API directly (the Vite dev server proxies /api anyway).
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173}
+  # Creates the three demo sign-ins (in DB2) on first start if they are missing.
+  demo-users: ${DEMO_USERS:true}
+  agent:
+    # labor_allocation.agent_playbook.status values that mean "the agent is asking for a decision".
+    # Allowed by the DB1 schema: SHADOW, DRAFT, PUBLISHED, ACKNOWLEDGED. Comma-separated.
+    request-statuses: ${AGENT_REQUEST_STATUSES:PUBLISHED}
+    # How often DB1 is checked for a new agent dump (milliseconds).
+    poll-ms: ${AGENT_POLL_MS:1500}
